@@ -264,9 +264,3 @@ convert_letter_grid_to_uppercase
 
 print_grid $x_size $y_size
 
-
-
-create_letter_grid $x_size $y_size
-
-print_grid $x_size $y_size
-
