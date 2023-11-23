@@ -21,8 +21,8 @@ place_character() {
 
   local x=$1
   local y=$2
-  local x_size = $3
-  local y_size = $4
+  local x_size=$3
+  local y_size=$4
   local character=$5
 
   # Calculate the index for the 1-dimensional array
@@ -52,6 +52,7 @@ get_letter_at_coordinates() {
     echo "${letter_grid[index]}"
   else
     echo "Error: Invalid coordinates ($x, $y) for grid of size $x_size x $y_size."
+    exit 1
   fi
 }
 
@@ -147,6 +148,71 @@ print_grid() {
   done
 }
 
+convert_letter_grid_to_lowercase() {
+  # Example usage: convert_letter_grid_to_lowercase
+  for ((i = 0; i < ${#letter_grid[@]}; i++)); do
+    letter_grid[i]="${letter_grid[i],,}"
+  done
+}
+
+convert_letter_grid_to_uppercase() {
+  # Example usage: convert_letter_grid_to_uppercase
+  for ((i = 0; i < ${#letter_grid[@]}; i++)); do
+    letter_grid[i]="${letter_grid[i]^^}"
+  done
+}
+
+replace_question_with_random_lowercase() {
+  # Example usage: replace_question_with_random_lowercase
+  for ((i = 0; i < ${#letter_grid[@]}; i++)); do
+    if [[ "${letter_grid[i]}" == "?" ]]; then
+      random_lowercase_letter=$(tr -dc 'a-z' < /dev/urandom | head -c 1)
+      letter_grid[i]="$random_lowercase_letter"
+    fi
+  done
+}
+
+put_word_in_grid() {
+  local word=$1
+  local x_size=$2
+  local y_size=$3
+
+  local finished=0
+
+    while [ "$finished" -eq 0 ]; do
+      local backup_grid=("${letter_grid[@]}")
+      local random_coordinates=$(get_random_coordinates $x_size $y_size)
+      local x=$(echo "$random_coordinates" | sed 's/,.*//')
+      local y=$(echo "$random_coordinates" | sed 's/[^,]*,//')
+      local direction=$(get_random_direction)
+      for ((i = 0; i < ${#word}; i++)); do
+        # Extract the character at the current position
+        local character="${word:i:1}"
+        local char_at_location=$(get_letter_at_coordinates $x $y $x_size $y_size)
+        
+        if [ "$character" == "$char_at_location" ] || [ "?" == "$char_at_location" ]; then
+            
+            place_character $x $y $x_size $y_size $character
+            new_coordinates=$(get_adjacent_coordinates $x $y $direction $x_size $y_size)
+            if [ "$new_coordinates=" == "-1,-1" ]; then
+              letter_grid=("${backup_grid[@]}")
+              break
+            fi
+            x=$(echo "$new_coordinates" | sed 's/,.*//')
+            y=$(echo "$new_coordinates" | sed 's/[^,]*,//')
+        else
+
+            # The cell is taken with another letter.
+            # Restore the grid and try again.
+            letter_grid=("${backup_grid[@]}")
+            break
+        fi
+
+       finished=1
+    done  
+  done
+}
+
 
 # Default values
 param1=""
@@ -156,7 +222,7 @@ param3=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --file)
-      input_file="$2"
+      file_path="$2"
       shift 2
       ;;
     --x)
@@ -167,12 +233,37 @@ while [[ $# -gt 0 ]]; do
       y_size="$2"
       shift 2
       ;;
+     --help)
+      echo "Usage: ./word-search-generator --file ./example.txt --x 20 --y 30"
+      echo "This produces a word search from the words in the word list, one word per line, of the size 20 by 30."
+      exit 0
+      ;;     
     *)
       echo "Invalid argument: $1"
+      echo "Try --help"
       exit 1
       ;;
   esac
 done
+
+
+create_letter_grid $x_size $y_size
+
+
+# Check if the file exists
+if [ -e "$file_path" ]; then
+  while IFS= read -r line; do
+    put_word_in_grid $line $x_size $y_size
+  done < "$file_path"
+else
+  echo "File not found: $file_path"
+fi
+
+replace_question_with_random_lowercase
+convert_letter_grid_to_uppercase
+
+print_grid $x_size $y_size
+
 
 
 create_letter_grid $x_size $y_size
