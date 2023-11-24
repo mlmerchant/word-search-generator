@@ -166,7 +166,8 @@ replace_question_with_random_lowercase() {
   # Example usage: replace_question_with_random_lowercase
   for ((i = 0; i < ${#letter_grid[@]}; i++)); do
     if [[ "${letter_grid[i]}" == "?" ]]; then
-      random_lowercase_letter=$(tr -dc 'a-z' < /dev/urandom | head -c 1)
+      letters=( {a..z} )
+      random_lowercase_letter=${letters[$RANDOM % 26]}
       letter_grid[i]="$random_lowercase_letter"
     fi
   done
