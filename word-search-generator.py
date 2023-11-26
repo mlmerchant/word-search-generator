@@ -27,6 +27,8 @@ parser = argparse.ArgumentParser(description='Example script for parsing command
 parser.add_argument('-x', type=int, help='An integer value for x board size.')
 parser.add_argument('-y', type=int, help='An integer value for y board size.')
 parser.add_argument('-f', type=str, help='Path to an input file with one word per line.')
+parser.add_argument('--scramble', action='store_true', help='Word directions will be scrambled.')
+
 args = parser.parse_args()
 x_value = args.x
 y_value = args.y
@@ -68,6 +70,8 @@ for word in words:
         start_y = randint(0, y_value)
         for i, letter in enumerate(word):
             letter = letter.upper()
+            if args.scramble:
+                direction = get_random_direction()
             try:
                 preexisting_letter = global_grid[start_y][start_x]
             except IndexError:
