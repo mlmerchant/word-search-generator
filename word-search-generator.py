@@ -23,7 +23,7 @@ def remove_non_alpha_and_whitespace(input_list):
 
 
 # Gather the arguments
-parser = argparse.ArgumentParser(description='Example script for parsing command line arguments.')
+parser = argparse.ArgumentParser(description='A simple CLI based word search generator.')
 parser.add_argument('-x', type=int, help='An integer value for x board size.')
 parser.add_argument('-y', type=int, help='An integer value for y board size.')
 parser.add_argument('-f', type=str, help='Path to an input file with one word per line.')
