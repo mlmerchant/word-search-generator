@@ -1,2 +1,2 @@
 # word-search-generator
-A simple word search generator written in bash and inteded to be ran from the CLI.
+Simple word search generators written in various languages and intended to be run from the CLI.
