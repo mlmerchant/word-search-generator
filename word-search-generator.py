@@ -66,7 +66,7 @@ for word in words:
         direction = get_random_direction()
         start_x = randint(0, x_value)
         start_y = randint(0, y_value)
-        for letter in word:
+        for i, letter in enumerate(word):
             letter = letter.upper()
             try:
                 preexisting_letter = global_grid[start_y][start_x]
@@ -77,15 +77,19 @@ for word in words:
                 global_grid[start_y][start_x] = letter
                 start_x += direction[0]
                 start_y += direction[1]
+                if start_x < 0 or start_y < 0:
+                    global_grid = copy.deepcopy(backup_grid)
+                    break
             else:
                 global_grid = copy.deepcopy(backup_grid)
                 break
-        placed = True
+            if i == len(word) - 1:
+                placed = True
 
 # Print the Board
 uppercase_characters = [chr(i) for i in range(ord('A'), ord('Z') + 1)]
-for y in range(y_value):
-    for x in range(x_value):
+for x in range(x_value):
+    for y in range(y_value):
         value = global_grid[y][x]
         if value == "?":
             value = choice(uppercase_characters)
