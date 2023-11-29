@@ -30,7 +30,7 @@ place_character() {
 
   # Check if the index is within bounds
   if ((index >= 0 && index < x_size * y_size)); then
-    letter_grid[index]=$character
+    letter_grid[index]=${character^^}
   else
     echo "Error: Invalid coordinates ($x, $y) for grid of size $x_size x $y_size."
   fi
@@ -121,9 +121,8 @@ get_random_direction() {
 }
 
 get_random_coordinates() {
-   
   # Example usage: random_coords=$(get_random_coordinates 10 10)
- 
+
   local size_x=$1
   local size_y=$2
   local random_x=$((RANDOM % size_x))
@@ -148,27 +147,13 @@ print_grid() {
   done
 }
 
-convert_letter_grid_to_lowercase() {
-  # Example usage: convert_letter_grid_to_lowercase
-  for ((i = 0; i < ${#letter_grid[@]}; i++)); do
-    letter_grid[i]="${letter_grid[i],,}"
-  done
-}
-
-convert_letter_grid_to_uppercase() {
-  # Example usage: convert_letter_grid_to_uppercase
-  for ((i = 0; i < ${#letter_grid[@]}; i++)); do
-    letter_grid[i]="${letter_grid[i]^^}"
-  done
-}
-
-replace_question_with_random_lowercase() {
+replace_question_with_random_uppercase() {
   # Example usage: replace_question_with_random_lowercase
   for ((i = 0; i < ${#letter_grid[@]}; i++)); do
     if [[ "${letter_grid[i]}" == "?" ]]; then
-      letters=( {a..z} )
-      random_lowercase_letter=${letters[$RANDOM % 26]}
-      letter_grid[i]="$random_lowercase_letter"
+      letters=( {A..Z} )
+      random_uppercase_letter=${letters[$RANDOM % 26]}
+      letter_grid[i]="$random_uppercase_letter"
     fi
   done
 }
@@ -177,43 +162,56 @@ put_word_in_grid() {
   local word=$1
   local x_size=$2
   local y_size=$3
+  local max_attempts=10  # Limit the number of retries
 
+  local attempt=0
   local finished=0
 
-    while [ "$finished" -eq 0 ]; do
-      local backup_grid=("${letter_grid[@]}")
-      local random_coordinates=$(get_random_coordinates $x_size $y_size)
-      local x=$(echo "$random_coordinates" | sed 's/,.*//')
-      local y=$(echo "$random_coordinates" | sed 's/[^,]*,//')
-      local direction=$(get_random_direction)
-      for ((i = 0; i < ${#word}; i++)); do
-        # Extract the character at the current position
-        local character="${word:i:1}"
-        local char_at_location=$(get_letter_at_coordinates $x $y $x_size $y_size)
-        
-        if [ "$character" == "$char_at_location" ] || [ "?" == "$char_at_location" ]; then
-            
-            place_character $x $y $x_size $y_size $character
-            new_coordinates=$(get_adjacent_coordinates $x $y $direction $x_size $y_size)
-            if [ "$new_coordinates=" == "-1,-1" ]; then
-              letter_grid=("${backup_grid[@]}")
-              break
-            fi
-            x=$(echo "$new_coordinates" | sed 's/,.*//')
-            y=$(echo "$new_coordinates" | sed 's/[^,]*,//')
-        else
+  while [ $finished -eq 0 ] && [ $attempt -lt $max_attempts ]; do
+    local backup_grid=("${letter_grid[@]}")
+    local random_coordinates=$(get_random_coordinates $x_size $y_size)
+    local x=$(echo "$random_coordinates" | cut -d ',' -f 1)
+    local y=$(echo "$random_coordinates" | cut -d ',' -f 2)
+    local direction=$(get_random_direction)
+    local can_place=1
 
-            # The cell is taken with another letter.
-            # Restore the grid and try again.
-            letter_grid=("${backup_grid[@]}")
-            break
+    for ((i = 0; i < ${#word}; i++)); do
+      local character="${word:i:1}"
+      local char_at_location=$(get_letter_at_coordinates $x $y $x_size $y_size)
+
+      if [ "$character" = "$char_at_location" ] || [ "$char_at_location" = "?" ]; then
+        new_coordinates=$(get_adjacent_coordinates $x $y $direction $x_size $y_size)
+        x=$(echo "$new_coordinates" | cut -d ',' -f 1)
+        y=$(echo "$new_coordinates" | cut -d ',' -f 2)
+
+        if [ "$new_coordinates" = "-1,-1" ]; then
+          can_place=0
+          letter_grid=("${backup_grid[@]}")
+          break
         fi
+      else
+        can_place=0
+        letter_grid=("${backup_grid[@]}")
+        break
+      fi
+    done
 
-       finished=1
-    done  
+    if [ $can_place -eq 1 ]; then
+      # Place the word
+      x=$(echo "$random_coordinates" | cut -d ',' -f 1)
+      y=$(echo "$random_coordinates" | cut -d ',' -f 2)
+      for ((i = 0; i < ${#word}; i++)); do
+        place_character $x $y $x_size $y_size "${word:i:1}"
+        new_coordinates=$(get_adjacent_coordinates $x $y $direction $x_size $y_size)
+        x=$(echo "$new_coordinates" | cut -d ',' -f 1)
+        y=$(echo "$new_coordinates" | cut -d ',' -f 2)
+      done
+      finished=1
+    else
+      attempt=$((attempt + 1))
+    fi
   done
 }
-
 
 # Default values
 param1=""
@@ -238,7 +236,7 @@ while [[ $# -gt 0 ]]; do
       echo "Usage: ./word-search-generator --file ./example.txt --x 20 --y 30"
       echo "This produces a word search from the words in the word list, one word per line, of the size 20 by 30."
       exit 0
-      ;;     
+      ;;
     *)
       echo "Invalid argument: $1"
       echo "Try --help"
@@ -260,8 +258,6 @@ else
   echo "File not found: $file_path"
 fi
 
-replace_question_with_random_lowercase
-convert_letter_grid_to_uppercase
+replace_question_with_random_uppercase
 
 print_grid $x_size $y_size
-
